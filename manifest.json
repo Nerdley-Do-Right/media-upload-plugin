@@ -8,13 +8,6 @@
         "overview": "remoteupload",
         "versions": [
             {
-                "checksum": "bf452321b612be543e7a550941ee1952",
-                "changelog": "1.1.9 Release - CRUCIAL - Only administrators can use the functions",
-                "targetAbi": "10.9.9.0",
-                "sourceUrl": "https://github.com/GrandguyJS/media-upload-plugin/releases/download/1.1.9/plugin.zip",
-                "version": "1.1.9.0"
-            },
-            {
                 "checksum": "a6d2d047b4a678f501dd354a2c0ef70b",
                 "changelog": "1.1.8 Release - Bug fixes - Show folders in directory",
                 "targetAbi": "10.9.9.0",
