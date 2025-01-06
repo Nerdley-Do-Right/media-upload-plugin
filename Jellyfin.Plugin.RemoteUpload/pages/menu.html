@@ -1,9 +1,21 @@
-<div data-role="page" class="page type-interior pluginConfigurationPage"
+<div data-role="page" class="page type-interior pluginConfigurationPage RemoteUploadConfigPage"
 	 data-require="emby-button,emby-select,emby-checkbox">
 	<div data-role="content">
 		<div class="content-primary">
 			<div class="content-primary">
-				<form id="RemoteFileUploadForm" enctype="multipart/form-data" action="/mediaupload/upload">
+				<form id="RemoteUploadForm">
+					<div class="inputContainer">
+						<label class="inputLabel inputLabelUnfocused" for="uploaddir">Upload directory</label>
+						<input id="uploaddirinput" name="uploaddir" type="text" is="emby-input" placeholder="If you see this, refresh"/>
+						<div class="fieldDescription">Path where files will get saved</div>
+					</div>
+					<div>
+						<button is="emby-button" type="submit" class="raised button-submit block emby-button" id="uploaddirsubmit">
+							<span>Save</span>
+						</button>
+					</div>
+				</form>
+				<form id="RemoteFileUploadForm" enctype="multipart/form-data" action="/mediaupload/upload" style="margin-top: 50px;">
                     <div class="inputContainer">
 						<h2>Upload file</h2>
 						<input type="file" name="files" required multiple id="uploadfile" is="emby-input" value="Upload file"/>
@@ -66,19 +78,57 @@
         </div>
     </div> 	
 	<script>
+		var RemoteUploadConfig = {
+			pluginUniqueId: 'b5a2d6b3-c5f4-4f88-aed4-5f3e9877d0a6',
+		};
+		
+		document.querySelector(".RemoteUploadConfigPage").addEventListener("pageshow", function () {
+			updatePlaceholder();
+		})
+
+		function updatePlaceholder() {
+			ApiClient.getPluginConfiguration(RemoteUploadConfig.pluginUniqueId).then(function (config) {
+				document.getElementById('uploaddirinput').setAttribute("placeholder", config.uploaddir);
+				Dashboard.hideLoadingMsg();
+			});
+		}
+
+		document.querySelector("#RemoteUploadForm")
+		.addEventListener('submit', function(e) {
+			e.preventDefault();
+			Dashboard.showLoadingMsg();
+			ApiClient.getPluginConfiguration(RemoteUploadConfig.pluginUniqueId).then(function (config) {
+				config.uploaddir = document.getElementById('uploaddirinput').value;
+				document.getElementById('uploaddirinput').value = "";
+				document.getElementById('uploaddirinput').setAttribute("placeholder", config.uploaddir);
+				ApiClient.updatePluginConfiguration(RemoteUploadConfig.pluginUniqueId, config).then(function (result) {
+					Dashboard.processPluginConfigurationUpdateResult(result);
+				});
+			});
+			return false;
+		});
+
+		async function fetchWithAuth(url, method, body) {
+			const reqInit = {
+				method: method,
+				headers: {
+					Authorization: "MediaBrowser Token=" + ApiClient.accessToken(),
+				},
+				body: body,
+			};
+
+			return await fetch(url, reqInit);
+		}
+
 		async function load() {
 			let url = document.querySelector("#GetTasksForm").action
-			const res = await fetch(url, {method: "GET"});
+			const res = await fetchWithAuth(url, "GET", null)
 			let tasks = await res.json();
 
 			return tasks;
 		}
 
 		load();
-
-		var RemoteUploadConfig = {
-			pluginUniqueId: 'b5a2d6b3-c5f4-4f88-aed4-5f3e9877d0a6',
-		};
 
 		let progress = document.getElementById("progress_file");
 		let chunk_size = 28000000;
@@ -105,7 +155,7 @@
 
 							// Request
 							try {
-								const res = await fetch(url, {method: 'POST', body: chunk_form});
+								const res = await fetchWithAuth(url, "POST", chunk_form);
 								if (res.ok) {
 									console.log("Successfully saved chunk " + chunk_index);
 									let progress_value = ((chunk_index+1)/Math.ceil(file.size / chunk_size))*100
@@ -120,7 +170,7 @@
                                 }
 								
 							} catch (error) {
-								progess.textContent = "Upload failed!"
+								progress.textContent = "Upload failed!"
 								console.log('Error:', error);
 								return;
 							}
@@ -150,7 +200,7 @@
 
 				try {
 					progress_url.textContent = "Download queued..."
-					const res = await fetch(url, {method: "POST", body: formData});
+					const res = await fetchWithAuth(url, "POST", formData)
 					if (res.ok) {
 						progress_url.textContent = "Download has started..."
 						document.getElementById("uploadurl").value = "";
@@ -213,7 +263,7 @@
 				});
 
 				try {
-					const res = await fetch(url, {method: "POST", body: formData});
+					const res = await fetchWithAuth(url, "POST", formData);
 					if (res.ok) {
 						bulkprogress_url.textContent = `Downloads are starting.`;
 					}
@@ -275,13 +325,13 @@
 
 			async function cancelTask(param) {
 				// Create form data with the cancellation key
-				let dummyForm = new FormData()
-				dummyForm.set("cancellationKey", param.name)
+				let form = new FormData()
+				form.set("cancellationKey", param.name)
 				try {
 					param.innerText = "Cancelling...";
 					param.removeAttribute("onclick");
 					// Request the cancel and get the result
-					const req = await fetch("/mediaupload/upload_cancel", {method: "POST", body: dummyForm});
+					const req = await fetchWithAuth("/mediaupload/upload_cancel", "POST", form);
 					const res = await req.json();
 					if (res.ok) {
 						param.innerText = "Cancelled successfully";
@@ -317,7 +367,7 @@
                 let url = remoteDownload.action;
 
                 try {
-                    const res = await fetch(url, {method: "POST", body: formData});
+                    const res = await fetchWithAuth(url, "POST", formData);
 
                     if (res.ok) {
                         document.querySelector("#download_button").innerText = "Downloading..."
@@ -326,7 +376,7 @@
                         const a = document.createElement("a");
                         a.style.display = "none";
                         a.href = downloadUrl;
-                        a.download = formData.get("path").split('/').pop(); // Set the filename
+                        a.download = formData.get("path").split('/').pop().split('\\').pop().split('//').pop(); // Set the filename
                         document.body.appendChild(a);
                         a.click();
                         window.URL.revokeObjectURL(downloadUrl);
@@ -349,7 +399,7 @@
 				e.preventDefault();
 				const formData = new FormData(document.querySelector("#RemoteDirectory"));
 				document.getElementById("folderContentDisplay").innerHTML = "";
-				const res = await fetch(document.querySelector("#RemoteDirectory").action, {method: "POST", body: formData})
+				const res = await fetchWithAuth(document.querySelector("#RemoteDirectory").action, "POST", formData)
 				try {
 					if (res.ok) {
 						let files = await res.json();
