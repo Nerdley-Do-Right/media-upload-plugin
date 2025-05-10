@@ -16,7 +16,7 @@ public class PluginConfiguration : BasePluginConfiguration
     }
 
     /// <summary>
-    /// Executable for youtube-dl/youtube-dlp
+    /// Executable for media-upload-plugin
     /// </summary>
     public string uploaddir { get; set; }
 }

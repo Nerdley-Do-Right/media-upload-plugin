@@ -38,9 +38,9 @@ public class UploadController : ControllerBase
             string uploaddir = config.uploaddir;
 
             if (!Directory.Exists(uploaddir))
-                {
-                    return BadRequest(new { message = "Directory doesn't exist!" });
-                }
+            {
+                Directory.CreateDirectory(uploaddir);
+            }
 
             if (file.Length > 0) {
                 var tempFilePath = Path.Combine(uploaddir, $"{file.FileName}.part");
@@ -82,7 +82,7 @@ public class UploadController : ControllerBase
 
         if (!Directory.Exists(uploaddir))
         {
-            return BadRequest(new { message = "Directory doesn't exist" });
+            Directory.CreateDirectory(uploaddir);
         }
 
         if (!IsDirectoryWritable(uploaddir)) {
@@ -157,7 +157,7 @@ public class UploadController : ControllerBase
 
         if (!Directory.Exists(uploaddir))
         {
-            return BadRequest(new { message = "Directory doesn't exist" });
+            Directory.CreateDirectory(uploaddir);
         }
 
         if (!IsDirectoryWritable(uploaddir)) {

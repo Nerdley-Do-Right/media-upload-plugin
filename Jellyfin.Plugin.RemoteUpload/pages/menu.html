@@ -72,7 +72,10 @@
 							<span id="directory_button">Show files</span>
                         </button>
                     </div>
-					<div id="folderContentDisplay"></div>
+					<div id="folderContentDisplay">
+						<!-- Files and Folders -->
+						<!-- If you click on a folder it you will navigate it. If you click on a file you can download it.-->
+					</div>
                 </form>
 			</div>
         </div>
@@ -362,8 +365,10 @@
             remoteDownload = document.querySelector("#RemoteDownload");
             remoteDownload.addEventListener("submit", async function(e) {
                 e.preventDefault();
-
-                let formData = new FormData(remoteDownload);
+				await doRemoteDownload();
+            });
+			async function doRemoteDownload() {
+				let formData = new FormData(remoteDownload);
                 let url = remoteDownload.action;
 
                 try {
@@ -393,19 +398,47 @@
                     document.querySelector("#download_button").textContent = "Download failed!"
                     return;
                 }
-            });
+			}
 
 			document.querySelector("#RemoteDirectory").addEventListener("submit", async function(e) {
 				e.preventDefault();
-				const formData = new FormData(document.querySelector("#RemoteDirectory"));
-				document.getElementById("folderContentDisplay").innerHTML = "";
-				const res = await fetchWithAuth(document.querySelector("#RemoteDirectory").action, "POST", formData)
+				await listDirectory();
+			})
+			async function listDirectory() {
 				try {
+
+					const formData = new FormData(document.querySelector("#RemoteDirectory"));
+					document.getElementById("folderContentDisplay").innerHTML = "";
+					const res = await fetchWithAuth(document.querySelector("#RemoteDirectory").action, "POST", formData)
 					if (res.ok) {
 						let files = await res.json();
+	
+						let oldPath = document.getElementById("downloadpathfolder").value;
+						if (!oldPath.endsWith("/")) {
+							oldPath += "/";
+						}
+	
 						for (var i = 0; i<files.length; i++) {
 							let element = document.createElement("ul");
 							element.innerHTML = files[i];
+							element.style = "cursor: pointer;";
+							if (files[i].endsWith("/")) {
+								// Navigate to dir
+								element.onclick = async function() {
+									document.getElementById("downloadpathfolder").value = oldPath + element.innerHTML;
+									await listDirectory();
+								};
+							}
+							else {
+								// Download file
+								element.onclick = async function() {
+									const confirmDownload = window.confirm("Do you want to download this file?");
+									if (confirmDownload) {
+										document.getElementById("downloadpath").value = oldPath + element.innerHTML;
+										await doRemoteDownload();
+									}
+								}
+							}
 							document.querySelector("#folderContentDisplay").appendChild(element);
 						}
 						return;
@@ -420,7 +453,7 @@
 					document.querySelector("#directory_button").textContent = "Local error!"
                     return;
 				}
-			})
+			}
 			/* Version 1.1.7 */
 	</script>
 </div>
