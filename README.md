@@ -27,7 +27,7 @@ location / {
 ```
 
 # Known errors
-- If the API cannot resolve a filename, the downloaded file will get named `download.dat`
+- If the API cannot resolve a filename, the downloaded file will get named `filewithoutname.mp4`
 - After updating the upload directory, please refresh the Upload page
 - Make sure the server will have some downloaded data after 5 seconds, when inputing the download url
 
