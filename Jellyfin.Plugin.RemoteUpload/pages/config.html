@@ -10,6 +10,8 @@
             <div class="content-primary">
                 <form id="RemoteUploadForm">
 					<div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="uploaddir">Choose upload directory</label>
+						<ul id="uploaddirslist" style="padding-left: 0; margin-top: 0; list-style-position: inside;"></ul>
 						<label class="inputLabel inputLabelUnfocused" for="uploaddir">Upload directory</label>
 						<input id="uploaddirinput" name="uploaddir" type="text" is="emby-input" placeholder="If you see this, refresh"/>
 						<div class="fieldDescription">Path where files will get saved</div>
@@ -27,29 +29,93 @@
                 pluginUniqueId: 'b5a2d6b3-c5f4-4f88-aed4-5f3e9877d0a6',
             };
 
-            document.querySelector(".RemoteUploadConfigPage").addEventListener("pageshow", function () {
-                updatePlaceholder();
-            })
+            document.querySelector(".RemoteUploadConfigPage").addEventListener("pageshow", async function () {
+                updateUI();
+                await load();
+            });
 
-            function updatePlaceholder() {
+            function updateUI() {
                 ApiClient.getPluginConfiguration(RemoteUploadConfig.pluginUniqueId).then(function (config) {
+                    // Update placeholder
                     document.getElementById('uploaddirinput').setAttribute("placeholder", config.uploaddir);
+
+                    // Clear and populate list
+                    const list = document.getElementById('uploaddirslist');
+                    list.innerHTML = "";
+                    config.uploaddirs.forEach(function (dir) {
+                        const li = document.createElement('li');
+                        li.style.display = "flex";
+                        li.style.justifyContent = "space-between";
+                        li.style.alignItems = "center";
+                        
+                        const span = document.createElement('span');
+                        span.textContent = dir;
+                        span.style.cursor = "pointer";
+
+                        if (dir === config.uploaddir) {
+                            li.style.listStyleType = "disc";
+                        }
+                        else {
+                            li.style.listStyleType = "circle";
+                        }
+
+                        span.addEventListener("click", function () {
+                            config.uploaddir = dir;
+                            document.getElementById('uploaddirinput').setAttribute("placeholder", dir);
+                            ApiClient.updatePluginConfiguration(RemoteUploadConfig.pluginUniqueId, config).then(function (result) {
+                                Dashboard.processPluginConfigurationUpdateResult(result);
+                                updateUI();
+                            });
+                        });
+
+                        // Remove button
+                        const removeBtn = document.createElement('p');
+                        removeBtn.textContent = "×";
+                        removeBtn.style.border = "none";
+                        removeBtn.style.background = "none";
+                        removeBtn.style.cursor = "pointer";
+                        removeBtn.style.color = "red";
+                        removeBtn.style.fontSize = "1.2em";
+                        removeBtn.style.margin = "0";
+
+                        removeBtn.addEventListener("click", function () {
+                            config.uploaddirs = config.uploaddirs.filter(p => p !== dir);
+                            if (config.uploaddir === dir) {
+                                config.uploaddir = config.uploaddirs[0] || "";
+                            }
+                            ApiClient.updatePluginConfiguration(RemoteUploadConfig.pluginUniqueId, config).then(function (result) {
+                                Dashboard.processPluginConfigurationUpdateResult(result);
+                                updateUI();
+                            });
+                        });
+
+                        li.appendChild(span);
+                        li.appendChild(removeBtn);
+                        list.appendChild(li);
+                    });
+
                     Dashboard.hideLoadingMsg();
                 });
             }
 
-            document.querySelector("#RemoteUploadForm")
-            .addEventListener('submit', function(e) {
+            document.querySelector("#RemoteUploadForm").addEventListener('submit', function (e) {
                 e.preventDefault();
-                Dashboard.showLoadingMsg();
+
                 ApiClient.getPluginConfiguration(RemoteUploadConfig.pluginUniqueId).then(function (config) {
-                    config.uploaddir = document.getElementById('uploaddirinput').value;
+                    const newDir = document.getElementById('uploaddirinput').value.trim();
+                    if (newDir && !config.uploaddirs.includes(newDir)) {
+                        config.uploaddirs.push(newDir);
+                    }
+                    config.uploaddir = newDir || config.uploaddir;
                     document.getElementById('uploaddirinput').value = "";
                     document.getElementById('uploaddirinput').setAttribute("placeholder", config.uploaddir);
+
                     ApiClient.updatePluginConfiguration(RemoteUploadConfig.pluginUniqueId, config).then(function (result) {
                         Dashboard.processPluginConfigurationUpdateResult(result);
+                        updateUI();
                     });
                 });
+
                 return false;
             });
         </script>
