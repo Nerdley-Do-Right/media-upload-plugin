@@ -2,112 +2,176 @@
 	 data-require="emby-button,emby-select,emby-checkbox">
 	<div data-role="content">
 		<div class="content-primary">
-			<div class="content-primary">
-				<form id="RemoteUploadForm">
-					<div class="inputContainer">
-						<label class="inputLabel inputLabelUnfocused" for="uploaddir">Upload directory</label>
-						<input id="uploaddirinput" name="uploaddir" type="text" is="emby-input" placeholder="If you see this, refresh"/>
-						<div class="fieldDescription">Path where files will get saved</div>
-					</div>
-					<div>
-						<button is="emby-button" type="submit" class="raised button-submit block emby-button" id="uploaddirsubmit">
-							<span>Save</span>
-						</button>
-					</div>
-				</form>
-				<form id="RemoteFileUploadForm" enctype="multipart/form-data" action="/mediaupload/upload" style="margin-top: 50px;">
-                    <div class="inputContainer">
-						<h2>Upload file</h2>
-						<input type="file" name="files" required multiple id="uploadfile" is="emby-input" value="Upload file"/>
-                    </div>
-                    <div>
-                        <button is="emby-button" type="submit" class="raised button-submit block emby-button" id="uploaddirsubmit">
-                            <span id="progress_file">Upload</span>
-                        </button>
-                    </div>
-                </form>
-				<form id="RemoteURLUploadForm" enctype="multipart/form-data" action="/mediaupload/upload_url" style="margin-top: 50px;">
-                    <div class="inputContainer">
-						<h2>Download from URL</h2>
-						<input type="text" name="url" required id="uploadurl" is="emby-input" placeholder="https://download.com/file.mp4"/>
-                    </div>
-                    <div>
-                        <button is="emby-button" type="submit" class="raised button-submit block emby-button" id="uploadurlsubmit">
-                            <span id="progress_url">Download</span>
-                        </button>
-                    </div>
-                </form>
-				<form id="RemoteBulkURLUploadForm" enctype="multipart/form-data" style="margin-top: 50px;" action="/mediaupload/upload_bulk_url">
-                    <div>
-						<label is="emby-button" class="raised button-submit block emby-button" for="uploadbulkurlsubmit" id="bulkprogress_url">Download all links from txt</label>
-                        <input type="file" id="uploadbulkurlsubmit" style="display: none;" onchange="bulkDownload()">
-						<input type="submit" style="display: none;">
-                    </div>
-                </form>
-				<form id="GetTasksForm" enctype="multipart/form-data" action="/mediaupload/get_tasks" style="margin-top: 50px;">
-                    <p>Tasks:</p>
-					<button is="emby-button" type="submit" class="raised button-submit block emby-button" style="width: max-content;">
-						<span id="progress_url">Refresh</span>
+			<form id="RemoteUploadForm">
+				<div class="inputContainer">
+					<label class="inputLabel inputLabelUnfocused" for="uploaddir">Choose upload directory</label>
+					<ul id="uploaddirslist" style="padding-left: 0; margin-top: 0; list-style-position: inside;"></ul>
+					<label class="inputLabel inputLabelUnfocused" for="uploaddir">Add upload directory</label>
+					<input id="uploaddirinput" name="uploaddir" type="text" is="emby-input" placeholder="If you see this, refresh"/>
+					<div class="fieldDescription">Path where files will get saved</div>
+				</div>
+				<div>
+					<button is="emby-button" type="submit" class="raised button-submit block emby-button">
+						<span>Save</span>
 					</button>
-                    <div class="current_tasks"></div>
-                </form>
-				<form id="RemoteDownload" enctype="multipart/form-data" action="/mediaupload/download">
-                    <div class="inputContainer">
-                        <h2>Download from server</h2>
-                        <input type="text" name="path" required id="downloadpath" is="emby-input" placeholder="File path"/>
-                    </div>
-                    <div>
-                        <button is="emby-button" type="submit" class="raised button-submit block emby-button" id="uploadurlsubmit">
-							<span id="download_button">Download</span>
-                        </button>
-                    </div>
-                </form>
-				<form id="RemoteDirectory" enctype="multipart/form-data" action="/mediaupload/directory">
-                    <div class="inputContainer">
-                        <h2>Log files in directory</h2>
-                        <input type="text" name="path" required id="downloadpathfolder" is="emby-input" placeholder="Folder path"/>
-                    </div>
-                    <div>
-                        <button is="emby-button" type="submit" class="raised button-submit block emby-button" id="uploadurlsubmit">
-							<span id="directory_button">Show files</span>
-                        </button>
-                    </div>
-					<div id="folderContentDisplay">
-						<!-- Files and Folders -->
-						<!-- If you click on a folder it you will navigate it. If you click on a file you can download it.-->
-					</div>
-                </form>
-			</div>
+				</div>
+			</form>
+			<form id="RemoteFileUploadForm" enctype="multipart/form-data" action="/mediaupload/upload" style="margin-top: 50px;">
+				<div class="inputContainer">
+					<h2>Upload file</h2>
+					<input type="file" name="files" required multiple id="uploadfile" is="emby-input" value="Upload file"/>
+				</div>
+				<div>
+					<button is="emby-button" type="submit" class="raised button-submit block emby-button">
+						<span id="progress_file">Upload</span>
+					</button>
+				</div>
+			</form>
+			<form id="RemoteURLUploadForm" enctype="multipart/form-data" action="/mediaupload/upload_url" style="margin-top: 50px;">
+				<div class="inputContainer">
+					<h2>Download from URL</h2>
+					<input type="text" name="url" required id="uploadurl" is="emby-input" placeholder="https://download.com/file.mp4"/>
+				</div>
+				<div>
+					<button is="emby-button" type="submit" class="raised button-submit block emby-button">
+						<span id="progress_url">Download</span>
+					</button>
+				</div>
+			</form>
+			<form id="RemoteBulkURLUploadForm" enctype="multipart/form-data" style="margin-top: 50px;" action="/mediaupload/upload_bulk_url">
+				<div>
+					<label is="emby-button" class="raised button-submit block emby-button" for="uploadbulkurlsubmit" id="bulkprogress_url">Download all links from txt</label>
+					<input type="file" id="uploadbulkurlsubmit" style="display: none;" onchange="bulkDownload()">
+					<input type="submit" style="display: none;">
+				</div>
+			</form>
+			<form id="GetTasksForm" enctype="multipart/form-data" action="/mediaupload/get_tasks" style="margin-top: 50px;">
+				<p>Tasks:</p>
+				<button is="emby-button" type="submit" class="raised button-submit block emby-button" style="width: max-content;">
+					<span>Refresh</span>
+				</button>
+				<div class="current_tasks"></div>
+			</form>
+			<form id="RemoteDownload" enctype="multipart/form-data" action="/mediaupload/download">
+				<div class="inputContainer">
+					<h2>Download from server</h2>
+					<input type="text" name="path" required id="downloadpath" is="emby-input" placeholder="File path"/>
+				</div>
+				<div>
+					<button is="emby-button" type="submit" class="raised button-submit block emby-button">
+						<span id="download_button">Download</span>
+					</button>
+				</div>
+			</form>
+			<form id="RemoteDirectory" enctype="multipart/form-data" action="/mediaupload/directory">
+				<div class="inputContainer">
+					<h2>Log files in directory</h2>
+					<input type="text" name="path" required id="downloadpathfolder" is="emby-input" placeholder="Folder path"/>
+				</div>
+				<div>
+					<button is="emby-button" type="submit" class="raised button-submit block emby-button">
+						<span id="directory_button">Show files</span>
+					</button>
+				</div>
+				<div id="folderContentDisplay">
+					<!-- Files and Folders -->
+					<!-- If you click on a folder it you will navigate it. If you click on a file you can download it.-->
+				</div>
+			</form>
         </div>
     </div> 	
 	<script>
 		var RemoteUploadConfig = {
 			pluginUniqueId: 'b5a2d6b3-c5f4-4f88-aed4-5f3e9877d0a6',
 		};
-		
-		document.querySelector(".RemoteUploadConfigPage").addEventListener("pageshow", function () {
-			updatePlaceholder();
-		})
 
-		function updatePlaceholder() {
+		document.querySelector(".RemoteUploadConfigPage").addEventListener("pageshow", async function () {
+			updateUI();
+			await load();
+		});
+
+		function updateUI() {
 			ApiClient.getPluginConfiguration(RemoteUploadConfig.pluginUniqueId).then(function (config) {
+				// Update placeholder
 				document.getElementById('uploaddirinput').setAttribute("placeholder", config.uploaddir);
+
+				// Clear and populate list
+				const list = document.getElementById('uploaddirslist');
+				list.innerHTML = "";
+				config.uploaddirs.forEach(function (dir) {
+					const li = document.createElement('li');
+					li.style.display = "flex";
+					li.style.justifyContent = "space-between";
+					li.style.alignItems = "center";
+					
+					const span = document.createElement('span');
+					span.textContent = dir;
+					span.style.cursor = "pointer";
+
+					if (dir === config.uploaddir) {
+						li.style.listStyleType = "disc";
+					}
+					else {
+						li.style.listStyleType = "circle";
+					}
+
+					span.addEventListener("click", function () {
+						config.uploaddir = dir;
+						document.getElementById('uploaddirinput').setAttribute("placeholder", dir);
+						ApiClient.updatePluginConfiguration(RemoteUploadConfig.pluginUniqueId, config).then(function (result) {
+							Dashboard.processPluginConfigurationUpdateResult(result);
+							updateUI();
+						});
+					});
+
+					// Remove button
+					const removeBtn = document.createElement('p');
+					removeBtn.textContent = "×";
+					removeBtn.style.border = "none";
+					removeBtn.style.background = "none";
+					removeBtn.style.cursor = "pointer";
+					removeBtn.style.color = "red";
+					removeBtn.style.fontSize = "1.2em";
+					removeBtn.style.margin = "0";
+
+					removeBtn.addEventListener("click", function () {
+						config.uploaddirs = config.uploaddirs.filter(p => p !== dir);
+						if (config.uploaddir === dir) {
+							config.uploaddir = config.uploaddirs[0] || "";
+						}
+						ApiClient.updatePluginConfiguration(RemoteUploadConfig.pluginUniqueId, config).then(function (result) {
+							Dashboard.processPluginConfigurationUpdateResult(result);
+							updateUI();
+						});
+					});
+
+					li.appendChild(span);
+					li.appendChild(removeBtn);
+					list.appendChild(li);
+				});
+
 				Dashboard.hideLoadingMsg();
 			});
 		}
 
-		document.querySelector("#RemoteUploadForm")
-		.addEventListener('submit', function(e) {
+		document.querySelector("#RemoteUploadForm").addEventListener('submit', function (e) {
 			e.preventDefault();
-			Dashboard.showLoadingMsg();
+
 			ApiClient.getPluginConfiguration(RemoteUploadConfig.pluginUniqueId).then(function (config) {
-				config.uploaddir = document.getElementById('uploaddirinput').value;
+				const newDir = document.getElementById('uploaddirinput').value.trim();
+				if (newDir && !config.uploaddirs.includes(newDir)) {
+					config.uploaddirs.push(newDir);
+				}
+				config.uploaddir = newDir || config.uploaddir;
 				document.getElementById('uploaddirinput').value = "";
 				document.getElementById('uploaddirinput').setAttribute("placeholder", config.uploaddir);
+
 				ApiClient.updatePluginConfiguration(RemoteUploadConfig.pluginUniqueId, config).then(function (result) {
 					Dashboard.processPluginConfigurationUpdateResult(result);
+					updateUI();
 				});
 			});
+
 			return false;
 		});
 
@@ -130,8 +194,6 @@
 
 			return tasks;
 		}
-
-		load();
 
 		let progress = document.getElementById("progress_file");
 		let chunk_size = 28000000;
@@ -454,6 +516,5 @@
                     return;
 				}
 			}
-			/* Version 1.1.7 */
 	</script>
 </div>
