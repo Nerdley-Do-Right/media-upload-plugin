@@ -23,7 +23,7 @@
 			<form id="RemoteUploadForm">
 				<div>
 					<button is="emby-button" type="submit" class="raised button-submit block emby-button">
-						<span>Save</span>
+						<span id="directory_button">Save</span>
 					</button>
 				</div>
 				<br>
@@ -752,12 +752,10 @@
 					}
 					else {
 						const result = await res.json();
-						document.querySelector("#directory_button").innerText = result.message || "Server error!";
 						return;
 					}
 				}
 				catch {
-					document.querySelector("#directory_button").textContent = "Local error!"
                     return;
 				}
 			}
