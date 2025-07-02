@@ -8,6 +8,13 @@
         "overview": "remoteupload",
         "versions": [
             {
+                "checksum": "9eb98dd84f38bc7e0c1312878dcf7918",
+                "changelog": "1.5 Release - Interactive Directory Browsing in native Jellyfin style",
+                "targetAbi": "10.9.9.0",
+                "sourceUrl": "https://github.com/GrandguyJS/media-upload-plugin/releases/download/1.5/plugin.zip",
+                "version": "1.5.0.0"
+            },    
+            {
                 "checksum": "f1e77ad9b216da3cfc9ddf55c57fbbc9",
                 "changelog": "1.4 Release - Save multiple upload directories",
                 "targetAbi": "10.9.9.0",
