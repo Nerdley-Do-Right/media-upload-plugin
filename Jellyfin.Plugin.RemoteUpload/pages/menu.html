@@ -2,18 +2,34 @@
 	 data-require="emby-button,emby-select,emby-checkbox">
 	<div data-role="content">
 		<div class="content-primary">
-			<form id="RemoteUploadForm">
+			<h1>Media-Upload-Plugin</h1>
+			<form id="SetUploadDirectory" enctype="multipart/form-data" action="/mediaupload/directory">
 				<div class="inputContainer">
-					<label class="inputLabel inputLabelUnfocused" for="uploaddir">Choose upload directory</label>
-					<ul id="uploaddirslist" style="padding-left: 0; margin-top: 0; list-style-position: inside;"></ul>
-					<label class="inputLabel inputLabelUnfocused" for="uploaddir">Add upload directory</label>
-					<input id="uploaddirinput" name="uploaddir" type="text" is="emby-input" placeholder="If you see this, refresh"/>
-					<div class="fieldDescription">Path where files will get saved</div>
+					<div style="display: flex; align-items: center;">
+						<div style="flex-grow:1;">
+							<label class="inputLabel inputLabel-float inputLabelUnfocused" for="downloadpathfolder">Folder</label>
+							<input is="emby-input" id="uploadpathfolder" name="path" type="text" required class="emby-input" placeholder="Folder path" />
+						</div>
+						<button type="submit" class="emby-input-iconbutton paper-icon-button-light" title="Browse">
+							<span class="material-icons search" aria-hidden="true"></span>
+						</button>
+					</div>
 				</div>
+
+				<div id="uploadFolderContentDisplay" class="results paperList" style="margin-top: 1em; max-height: 300px; overflow-y: auto;">
+					<!-- Files/Folders get inserted here by JS -->
+				</div>
+			</form>
+			<form id="RemoteUploadForm">
 				<div>
 					<button is="emby-button" type="submit" class="raised button-submit block emby-button">
 						<span>Save</span>
 					</button>
+				</div>
+				<br>
+				<div class="inputContainer">
+					<label class="inputLabel inputLabelUnfocused" for="uploaddir">Choose upload directory</label>
+					<ul id="uploaddirslist" style="padding-left: 0; margin-top: 0; list-style-position: inside;"></ul>
 				</div>
 			</form>
 			<form id="RemoteFileUploadForm" enctype="multipart/form-data" action="/mediaupload/upload" style="margin-top: 50px;">
@@ -66,17 +82,22 @@
 			<form id="RemoteDirectory" enctype="multipart/form-data" action="/mediaupload/directory">
 				<div class="inputContainer">
 					<h2>Log files in directory</h2>
-					<input type="text" name="path" required id="downloadpathfolder" is="emby-input" placeholder="Folder path"/>
+					<div style="display: flex; align-items: center;">
+						<div style="flex-grow:1;">
+							<label class="inputLabel inputLabel-float inputLabelUnfocused" for="downloadpathfolder">Folder</label>
+							<input is="emby-input" id="downloadpathfolder" name="path" type="text" required class="emby-input" placeholder="Folder path" />
+						</div>
+						<button type="submit" class="emby-input-iconbutton paper-icon-button-light" title="Browse">
+							<span class="material-icons search" aria-hidden="true"></span>
+						</button>
+					</div>
 				</div>
-				<div>
-					<button is="emby-button" type="submit" class="raised button-submit block emby-button">
-						<span id="directory_button">Show files</span>
-					</button>
+
+				<div id="folderContentDisplay" class="results paperList" style="margin-top: 1em; max-height: 300px; overflow-y: auto;">
+					<!-- Files/Folders get inserted here by JS -->
 				</div>
-				<div id="folderContentDisplay">
-					<!-- Files and Folders -->
-					<!-- If you click on a folder it you will navigate it. If you click on a file you can download it.-->
-				</div>
+
+				<input type="hidden" id="downloadpath" name="downloadpath" />
 			</form>
         </div>
     </div> 	
@@ -93,7 +114,7 @@
 		function updateUI() {
 			ApiClient.getPluginConfiguration(RemoteUploadConfig.pluginUniqueId).then(function (config) {
 				// Update placeholder
-				document.getElementById('uploaddirinput').setAttribute("placeholder", config.uploaddir);
+				document.getElementById('uploadpathfolder').setAttribute("placeholder", config.uploaddir);
 
 				// Clear and populate list
 				const list = document.getElementById('uploaddirslist');
@@ -117,7 +138,7 @@
 
 					span.addEventListener("click", function () {
 						config.uploaddir = dir;
-						document.getElementById('uploaddirinput').setAttribute("placeholder", dir);
+						document.getElementById('uploadpathfolder').setAttribute("placeholder", dir);
 						ApiClient.updatePluginConfiguration(RemoteUploadConfig.pluginUniqueId, config).then(function (result) {
 							Dashboard.processPluginConfigurationUpdateResult(result);
 							updateUI();
@@ -158,13 +179,13 @@
 			e.preventDefault();
 
 			ApiClient.getPluginConfiguration(RemoteUploadConfig.pluginUniqueId).then(function (config) {
-				const newDir = document.getElementById('uploaddirinput').value.trim();
+				const newDir = document.getElementById('uploadpathfolder').value.trim();
 				if (newDir && !config.uploaddirs.includes(newDir)) {
 					config.uploaddirs.push(newDir);
 				}
 				config.uploaddir = newDir || config.uploaddir;
-				document.getElementById('uploaddirinput').value = "";
-				document.getElementById('uploaddirinput').setAttribute("placeholder", config.uploaddir);
+				document.getElementById('uploadpathfolder').value = "";
+				document.getElementById('uploadpathfolder').setAttribute("placeholder", config.uploaddir);
 
 				ApiClient.updatePluginConfiguration(RemoteUploadConfig.pluginUniqueId, config).then(function (result) {
 					Dashboard.processPluginConfigurationUpdateResult(result);
@@ -174,6 +195,139 @@
 
 			return false;
 		});
+
+		document.querySelector("#SetUploadDirectory").addEventListener("submit", async function(e) {
+			e.preventDefault();
+			await listUploadDirectory();
+		})
+		async function listUploadDirectory() {
+			try {
+				const scrollTop = window.scrollY;
+
+				const pathInput = document.getElementById("uploadpathfolder");
+				let oldPath = pathInput.value.trim().replace(/\\/g, "/");
+				if (!oldPath.endsWith("/")) oldPath += "/";
+				pathInput.value = oldPath;
+
+				const formData = new FormData(document.querySelector("#SetUploadDirectory"));
+				document.getElementById("uploadFolderContentDisplay").innerHTML = "";
+				const res = await fetchWithAuth(document.querySelector("#SetUploadDirectory").action, "POST", formData)
+				if (res.ok) {
+					let files = await res.json();
+
+					let oldPath = document.getElementById("uploadpathfolder").value;
+					if (!oldPath.endsWith("/")) {
+						oldPath += "/";
+					}
+
+					// Up element
+					const upElement = document.createElement("div");
+					upElement.className = "listItem listItem-border lnkPath lnkDirectory";
+					upElement.setAttribute("data-type", "Directory");
+					upElement.setAttribute("data-path", "..");
+					upElement.style.cursor = "pointer";
+
+					// Inner body
+					let upBody = document.createElement("div");
+					upBody.className = "listItemBody";
+					upBody.style.paddingLeft = "0";
+					upBody.style.paddingTop = ".5em";
+					upBody.style.paddingBottom = ".5em";
+
+					// Text
+					let upText = document.createElement("div");
+					upText.className = "listItemBodyText";
+					upText.textContent = "..";
+
+					// Compose
+					upBody.appendChild(upText);
+					upElement.appendChild(upBody);
+
+					// Arrow
+					let upArrow = document.createElement("span");
+					upArrow.className = "material-icons arrow_forward";
+					upArrow.setAttribute("aria-hidden", "true");
+					upArrow.style.fontSize = "inherit";
+					upElement.appendChild(upArrow);
+
+					// Behavior: go up one directory
+					upElement.onclick = async function () {
+						let currentPath = document.getElementById("uploadpathfolder").value.trim().replace(/\/+$/, "");
+						const segments = currentPath.split("/");
+						if (segments.length > 1) {
+							segments.pop(); // remove last folder
+							document.getElementById("uploadpathfolder").value = segments.join("/") + "/";
+							await listUploadDirectory();
+						}
+					};
+
+					document.querySelector("#uploadFolderContentDisplay").appendChild(upElement);
+
+					for (let i = 0; i<files.length; i++) {
+						const path = files[i];
+						const isFolder = path.endsWith("/");
+						
+						if (!isFolder) {
+							continue;
+						}
+
+						// Wrapper div
+						let element = document.createElement("div");
+						element.className = "listItem listItem-border lnkPath";
+						element.setAttribute("data-type", isFolder ? "Directory" : "File");
+						element.setAttribute("data-path", oldPath + path);
+						element.style.cursor = "pointer";
+
+						
+						element.classList.add("lnkDirectory");
+
+						// Inner body
+						let body = document.createElement("div");
+						body.className = "listItemBody";
+						body.style.paddingLeft = "0";
+						body.style.paddingTop = ".5em";
+						body.style.paddingBottom = ".5em";
+
+						// Text element
+						let text = document.createElement("div");
+						text.className = "listItemBodyText";
+						text.textContent = path;
+
+						// Compose
+						body.appendChild(text);
+						element.appendChild(body);
+
+						
+						let arrow = document.createElement("span");
+						arrow.className = "material-icons arrow_forward";
+						arrow.setAttribute("aria-hidden", "true");
+						arrow.style.fontSize = "inherit";
+						element.appendChild(arrow);
+
+						element.onclick = async function() {
+							document.getElementById("uploadpathfolder").value = oldPath + path;
+							document.getElementById("uploadpathfolder").blur();
+							await listUploadDirectory();
+						};
+
+						// Add to container
+						document.querySelector("#uploadFolderContentDisplay").appendChild(element);
+					}
+					window.scrollTo(0, scrollTop);
+					
+					return;
+				}
+				else {
+					const result = await res.json();
+					document.querySelector("#directory_button").innerText = result.message || "Server error!";
+					return;
+				}
+			}
+			catch {
+				document.querySelector("#directory_button").textContent = "Local error!"
+				return;
+			}
+		}
 
 		async function fetchWithAuth(url, method, body) {
 			const reqInit = {
@@ -468,6 +622,12 @@
 			})
 			async function listDirectory() {
 				try {
+					const scrollTop = window.scrollY;
+
+					const pathInput = document.getElementById("downloadpathfolder");
+					let oldPath = pathInput.value.trim().replace(/\\/g, "/");
+					if (!oldPath.endsWith("/")) oldPath += "/";
+					pathInput.value = oldPath;
 
 					const formData = new FormData(document.querySelector("#RemoteDirectory"));
 					document.getElementById("folderContentDisplay").innerHTML = "";
@@ -479,30 +639,115 @@
 						if (!oldPath.endsWith("/")) {
 							oldPath += "/";
 						}
+
+						// Up element
+						const upElement = document.createElement("div");
+						upElement.className = "listItem listItem-border lnkPath lnkDirectory";
+						upElement.setAttribute("data-type", "Directory");
+						upElement.setAttribute("data-path", "..");
+						upElement.style.cursor = "pointer";
+
+						// Inner body
+						let upBody = document.createElement("div");
+						upBody.className = "listItemBody";
+						upBody.style.paddingLeft = "0";
+						upBody.style.paddingTop = ".5em";
+						upBody.style.paddingBottom = ".5em";
+
+						// Text
+						let upText = document.createElement("div");
+						upText.className = "listItemBodyText";
+						upText.textContent = "..";
+
+						// Compose
+						upBody.appendChild(upText);
+						upElement.appendChild(upBody);
+
+						// Arrow
+						let upArrow = document.createElement("span");
+						upArrow.className = "material-icons arrow_forward";
+						upArrow.setAttribute("aria-hidden", "true");
+						upArrow.style.fontSize = "inherit";
+						upElement.appendChild(upArrow);
+
+						// Behavior: go up one directory
+						upElement.onclick = async function () {
+							let currentPath = document.getElementById("downloadpathfolder").value.trim().replace(/\/+$/, "");
+							const segments = currentPath.split("/");
+							if (segments.length > 1) {
+								segments.pop(); // remove last folder
+								document.getElementById("downloadpathfolder").value = segments.join("/") + "/";
+								await listDirectory();
+							}
+						};
+
+						document.querySelector("#folderContentDisplay").appendChild(upElement);
 	
-						for (var i = 0; i<files.length; i++) {
-							let element = document.createElement("ul");
-							element.innerHTML = files[i];
-							element.style = "cursor: pointer;";
-							if (files[i].endsWith("/")) {
-								// Navigate to dir
+						for (let i = 0; i<files.length; i++) {
+							const path = files[i];
+							const isFolder = path.endsWith("/");
+
+							// Wrapper div
+							let element = document.createElement("div");
+							element.className = "listItem listItem-border lnkPath";
+							element.setAttribute("data-type", isFolder ? "Directory" : "File");
+							element.setAttribute("data-path", oldPath + path);
+							element.style.cursor = "pointer";
+
+							// Add folder class if it's a directory
+							if (isFolder) {
+								element.classList.add("lnkDirectory");
+							}
+
+							// Inner body
+							let body = document.createElement("div");
+							body.className = "listItemBody";
+							body.style.paddingLeft = "0";
+							body.style.paddingTop = ".5em";
+							body.style.paddingBottom = ".5em";
+
+							// Text element
+							let text = document.createElement("div");
+							text.className = "listItemBodyText";
+							text.textContent = path;
+
+							// Compose
+							body.appendChild(text);
+							element.appendChild(body);
+
+							// Arrow icon (for folders only)
+							if (isFolder) {
+								let arrow = document.createElement("span");
+								arrow.className = "material-icons arrow_forward";
+								arrow.setAttribute("aria-hidden", "true");
+								arrow.style.fontSize = "inherit";
+								element.appendChild(arrow);
+							}
+
+							
+
+							// Behavior
+							if (isFolder) {
 								element.onclick = async function() {
-									document.getElementById("downloadpathfolder").value = oldPath + element.innerHTML;
+									document.getElementById("downloadpathfolder").value = oldPath + path;
+									document.getElementById("downloadpathfolder").blur();
 									await listDirectory();
 								};
-							}
-							else {
-								// Download file
+							} else {
 								element.onclick = async function() {
 									const confirmDownload = window.confirm("Do you want to download this file?");
 									if (confirmDownload) {
-										document.getElementById("downloadpath").value = oldPath + element.innerHTML;
+										document.getElementById("downloadpath").value = oldPath + path;
 										await doRemoteDownload();
 									}
-								}
+								};
 							}
+
+							// Add to container
 							document.querySelector("#folderContentDisplay").appendChild(element);
 						}
+						window.scrollTo(0, scrollTop);
+						
 						return;
 					}
 					else {
