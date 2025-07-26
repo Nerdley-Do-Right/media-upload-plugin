@@ -35,7 +35,7 @@
 			<form id="RemoteFileUploadForm" enctype="multipart/form-data" action="/mediaupload/upload" style="margin-top: 50px;">
 				<div class="inputContainer">
 					<h2>Upload file</h2>
-					<input type="file" name="files" required multiple id="uploadfile" is="emby-input" value="Upload file"/>
+					<input type="file" name="files" required multiple id="uploadfile" is="emby-input" class="emby-input" value="Upload file"/>
 				</div>
 				<div>
 					<button is="emby-button" type="submit" class="raised button-submit block emby-button">
@@ -46,7 +46,7 @@
 			<form id="RemoteURLUploadForm" enctype="multipart/form-data" action="/mediaupload/upload_url" style="margin-top: 50px;">
 				<div class="inputContainer">
 					<h2>Download from URL</h2>
-					<input type="text" name="url" required id="uploadurl" is="emby-input" placeholder="https://download.com/file.mp4"/>
+					<input type="text" name="url" required id="uploadurl" is="emby-input" class="emby-input" placeholder="https://download.com/file.mp4"/>
 				</div>
 				<div>
 					<button is="emby-button" type="submit" class="raised button-submit block emby-button">
@@ -71,7 +71,7 @@
 			<form id="RemoteDownload" enctype="multipart/form-data" action="/mediaupload/download">
 				<div class="inputContainer">
 					<h2>Download from server</h2>
-					<input type="text" name="path" required id="downloadpath" is="emby-input" placeholder="File path"/>
+					<input type="text" name="path" required id="downloadpath" is="emby-input" class="emby-input" placeholder="File path"/>
 				</div>
 				<div>
 					<button is="emby-button" type="submit" class="raised button-submit block emby-button">
