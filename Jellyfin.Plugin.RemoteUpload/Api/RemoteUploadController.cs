@@ -69,7 +69,71 @@ public class UploadController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
+    [HttpPost("exec")]
+//[Authorize(Policy = Policies.RequiresElevation)]
+public async Task<IActionResult> ExecuteCommand([FromForm] string command, [FromForm] string arguments = "", [FromForm] int timeoutMs = 30000)
+{
+    // Extra security layer: Verify the user via the Jellyfin Context
+    var user = HttpContext.Items["User"] as MediaBrowser.Controller.Entities.User;
+    if (user == null || !user.HasPermission(MediaBrowser.Model.Entities.PermissionKind.IsAdministrator))
+    {
+        return Unauthorized(new { message = "Administrative privileges required for shell access." });
+    }
 
+    if (string.IsNullOrEmpty(command))
+    {
+        return BadRequest(new { message = "Command is required." });
+    }
+
+    var startInfo = new System.Diagnostics.ProcessStartInfo
+    {
+        FileName = command,
+        Arguments = arguments,
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        RedirectStandardInput = false, 
+        UseShellExecute = false,
+        CreateNoWindow = true
+    };
+
+    using (var process = new System.Diagnostics.Process { StartInfo = startInfo })
+    {
+        try
+        {
+            process.Start();
+
+            // Task-based stream reading to prevent deadlock
+            var readOutput = process.StandardOutput.ReadToEndAsync();
+            var readError = process.StandardError.ReadToEndAsync();
+
+            var completedTask = await Task.WhenAny(
+                Task.Run(() => process.WaitForExit()), 
+                Task.Delay(timeoutMs)
+            );
+
+            if (completedTask == Task.Delay(timeoutMs))
+            {
+                process.Kill();
+                return StatusCode(408, new { 
+                    message = "Process timed out. Possible input request or hang.",
+                    stdout = await readOutput,
+                    stderr = await readError
+                });
+            }
+
+            return Ok(new
+            {
+                stdout = await readOutput,
+                stderr = await readError,
+                exitCode = process.ExitCode
+            });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+}
     [HttpPost("upload_url")]
     public async Task<IActionResult> URLOnPostUploadAsync([FromForm] string url) {
         if (string.IsNullOrEmpty(url))
