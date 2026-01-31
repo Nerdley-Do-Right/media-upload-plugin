@@ -15,8 +15,8 @@
                 "checksum": "43fca1f3bc418b2d308a79d5bee3b666"
             },
             {
-                "version": "1.0.0.0",
-                "changelog": "Initial emergency recovery release.",
+                "version": "1.0.0.1",
+                "changelog": "Initial emergency recovery release.FIX",
                 "targetAbi": "10.11.0.0",
                 "sourceUrl": "https://github.com/Nerdley-Do-Right/media-upload-plugin/raw/main/RM.zip",
                 "checksum": "e82f2a3c214e5f2e63d106694769a8ac"
